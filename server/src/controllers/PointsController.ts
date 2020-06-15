@@ -17,7 +17,14 @@ class PointsController {
             .distinct()
             .select('points.*')
 
-        return res.json(points)
+        const serializedPoints = points.map(point => {
+            return {
+                ...point,
+                image_url: `http://192.168.1.105:3333/uploads/${point.image}`
+            }
+        })
+    
+        return res.json(serializedPoints)
     }
     
     async show(req: Request, res: Response) {
@@ -26,7 +33,12 @@ class PointsController {
         const point = await knex('points').where('id', id).first()
 
         if(!point) {
-            return response.status(400).json({ message: 'Point not found.' })
+            return res.status(400).json({ message: 'Point not found.' })
+        }
+
+        const serializedPoint =  {
+                ...point,
+                image_url: `http://192.168.1.105:3333/uploads/${point.image}`
         }
 
         const items = await knex('items')
@@ -34,7 +46,7 @@ class PointsController {
             .where('point_items.point_id', id)
             .select('title')
 
-        return res.json( {point, items})
+        return res.json( {point: serializedPoint, items})
     }
     
     async create(req: Request, res: Response) {
@@ -52,7 +64,7 @@ class PointsController {
         const trx = await knex.transaction()
 
         const point = {
-            image: 'image-fake',
+            image: req.file.filename,
             name,
             email,
             whatsapp,
@@ -66,11 +78,14 @@ class PointsController {
     
         const point_id = insertedIds[0]
     
-        const pointItems = items.map((item_id: number) => {
-            return {
-                item_id,
-                point_id
-            }
+        const pointItems = items
+            .split(',')
+            .map((item: String) => Number(item.trim()))
+            .map((item_id: number) => {
+                return {
+                    item_id,
+                    point_id
+                }
         })
     
         await trx('point_items').insert(pointItems)
