@@ -37,9 +37,5 @@ routes.post(
     }),
     pointsController.create)
 
-// index, show, create, update, delete
 
 export default routes
-
-// Service Pattern
-// Repository Pattern (Data Mapper)
